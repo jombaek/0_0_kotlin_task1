@@ -309,14 +309,18 @@ class ScreenshotMakerController {
         var imageFilter = FileChooser.ExtensionFilter("Image Files", "*.jpg", "*.png")
         fileChooser.extensionFilters.add(imageFilter)
         fileChooser.initialDirectory = File(getPathFromConfig())
-        var file = fileChooser.showOpenDialog(canvasPane.scene.window)
-        rememberLastSavePath(file.parent)
-        var image = Image(file.toURI().toString());
-        changeCanvasImage(image)
-        saveMenuItem.isDisable = false
-        saveAsMenuItem.isDisable = false
-        hasImage = true
-        cutButton.isVisible = true
+
+        try {
+            var file = fileChooser.showOpenDialog(canvasPane.scene.window)
+            rememberLastSavePath(file.parent)
+            var image = Image(file.toURI().toString());
+            changeCanvasImage(image)
+            saveMenuItem.isDisable = false
+            saveAsMenuItem.isDisable = false
+            hasImage = true
+            cutButton.isVisible = true
+        } catch(e: NullPointerException){
+        }
     }
 
     @FXML

@@ -24,9 +24,9 @@
         <menus>
             <Menu text="File">
                 <items>
-                    <MenuItem mnemonicParsing="false" onAction="#onOpenMenuClicked" text="Open" />
-                    <MenuItem fx:id="saveMenuItem" mnemonicParsing="false" onAction="#onSaveMenuClicked" text="Save" disable="true" />
-                    <MenuItem fx:id="saveAsMenuItem" mnemonicParsing="false" onAction="#onSaveAsMenuClicked" text="Save As..." disable="true" />
+                    <MenuItem mnemonicParsing="false" onAction="#onOpenMenuClicked" text="Open" accelerator="Shortcut+O" />
+                    <MenuItem fx:id="saveMenuItem" mnemonicParsing="false" onAction="#onSaveMenuClicked" text="Save" disable="true" accelerator="Shortcut+S" />
+                    <MenuItem fx:id="saveAsMenuItem" mnemonicParsing="false" onAction="#onSaveAsMenuClicked" text="Save As..." disable="true" accelerator="Shortcut+Shift+S" />
                     <MenuItem mnemonicParsing="false" onAction="#onExitMenuClicked" text="Exit" />
                 </items>
             </Menu>
