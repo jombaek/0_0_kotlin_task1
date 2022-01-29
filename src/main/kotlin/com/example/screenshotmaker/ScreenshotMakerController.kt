@@ -8,14 +8,12 @@ import javafx.scene.control.*
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.image.WritableImage
-import javafx.scene.input.MouseButton
-import javafx.scene.input.MouseEvent
+import javafx.scene.input.*
 import javafx.scene.layout.HBox
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.transform.Scale
 import javafx.stage.FileChooser
-import javafx.stage.Stage
 import java.awt.Rectangle
 import java.awt.Robot
 import java.awt.Toolkit
@@ -173,9 +171,7 @@ class ScreenshotMakerController {
         }
     }
 
-
-    @FXML
-    private fun onTakeScreenshotButtonClick(event: ActionEvent) {
+    private fun takeAScreenshot() {
         timer = timerSlider.value
         val scene = takeScreenshotButton.scene
         val defaultOpacity = scene.window.opacity
@@ -193,6 +189,23 @@ class ScreenshotMakerController {
         cutButton.isVisible = true
         saveMenuItem.isDisable = false
         saveAsMenuItem.isDisable = false
+    }
+
+    private fun getImageFromCanvases(): Image? {
+        var params = SnapshotParameters()
+        params.fill = Color.TRANSPARENT
+        var screenshotImage = screenshotCanvas.snapshot(params, null)
+        var drawingImage = drawingCanvas.snapshot(params, null)
+        cutCanvas.graphicsContext2D.drawImage(screenshotImage, 0.0, 0.0)
+        cutCanvas.graphicsContext2D.drawImage(drawingImage, 0.0, 0.0)
+        var resultImage = cutCanvas.snapshot(params, null)
+        cutCanvas.graphicsContext2D.clearRect(0.0, 0.0, resultImage.width, resultImage.height)
+        return resultImage
+    }
+
+    @FXML
+    private fun onTakeScreenshotButtonClick(event: ActionEvent) {
+        takeAScreenshot()
     }
 
     @FXML
@@ -328,14 +341,7 @@ class ScreenshotMakerController {
         var file: File
         file = File(System.getenv("USERPROFILE") + quickSaveLocation + quickScreenshotName + ".png")
 
-        var params = SnapshotParameters()
-        params.fill = Color.TRANSPARENT
-        var screenshotImage = screenshotCanvas.snapshot(params, null)
-        var drawingImage = drawingCanvas.snapshot(params, null)
-        cutCanvas.graphicsContext2D.drawImage(screenshotImage, 0.0, 0.0)
-        cutCanvas.graphicsContext2D.drawImage(drawingImage, 0.0, 0.0)
-        var resultImage = cutCanvas.snapshot(params, null)
-        cutCanvas.graphicsContext2D.clearRect(0.0, 0.0, resultImage.width, resultImage.height)
+        var resultImage = getImageFromCanvases()
         if (!file.exists())
             file.parentFile.mkdirs()
         ImageIO.write(convertToBufferedImage(resultImage), "png", file)
@@ -354,14 +360,7 @@ class ScreenshotMakerController {
             file = fileChooser.showSaveDialog(canvasPane.scene.window)
             rememberLastSavePath(file.parent)
 
-            var params = SnapshotParameters()
-            params.fill = Color.TRANSPARENT
-            var screenshotImage = screenshotCanvas.snapshot(params, null)
-            var drawingImage = drawingCanvas.snapshot(params, null)
-            cutCanvas.graphicsContext2D.drawImage(screenshotImage, 0.0, 0.0)
-            cutCanvas.graphicsContext2D.drawImage(drawingImage, 0.0, 0.0)
-            var resultImage = cutCanvas.snapshot(params, null)
-            cutCanvas.graphicsContext2D.clearRect(0.0, 0.0, resultImage.width, resultImage.height)
+            var resultImage = getImageFromCanvases()
             ImageIO.write(convertToBufferedImage(resultImage), "png", file)
         } catch (ex: NullPointerException) {
         }
@@ -370,5 +369,25 @@ class ScreenshotMakerController {
     @FXML
     private fun onExitMenuClicked() {
         exitProcess(0)
+    }
+
+    @FXML
+    private fun onKeyPressed(e: KeyEvent) {
+        when (e.code) {
+            KeyCode.T -> {
+                if (e.isControlDown) {
+                    takeAScreenshot()
+                }
+            }
+            KeyCode.C -> {
+                if (e.isControlDown) {
+                    val clipboard: Clipboard = Clipboard.getSystemClipboard()
+                    val content = ClipboardContent()
+                    var resultImage = getImageFromCanvases()
+                    content.putImage(resultImage)
+                    clipboard.setContent(content)
+                }
+            }
+        }
     }
 }

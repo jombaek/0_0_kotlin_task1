@@ -19,7 +19,8 @@
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.paint.Color?>
 <VBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.example.screenshotmaker.ScreenshotMakerController">
+      fx:controller="com.example.screenshotmaker.ScreenshotMakerController"
+      onKeyPressed="#onKeyPressed">
     <MenuBar prefHeight="30.0" prefWidth="1000.0">
         <menus>
             <Menu text="File">
