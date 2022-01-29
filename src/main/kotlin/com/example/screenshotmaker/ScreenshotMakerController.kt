@@ -14,11 +14,15 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.transform.Scale
+import javafx.stage.FileChooser
+import javafx.stage.Stage
 import java.awt.Rectangle
 import java.awt.Robot
 import java.awt.Toolkit
 import java.awt.image.BufferedImage
-import java.io.IOException
+import java.awt.image.BufferedImage.TYPE_4BYTE_ABGR
+import java.io.*
+import javax.imageio.ImageIO
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -51,6 +55,11 @@ class ScreenshotMakerController {
     private lateinit var brushWidthSpinner: Spinner<Int>
     @FXML
     private lateinit var cutButton: Button
+    @FXML
+    private lateinit var saveMenuItem: MenuItem
+    @FXML
+    private lateinit var saveAsMenuItem: MenuItem
+
 
     private enum class AppMode {
         CUTTING,
@@ -62,6 +71,11 @@ class ScreenshotMakerController {
     private var appMode = AppMode.DRAWING
     private var x_start = -1.0
     private var y_start = -1.0
+    private var defaultSaveLocation = "\\Documents\\ScreenshotMaker\\screenshots\\"
+    private var quickSaveLocation = "\\Documents\\ScreenshotMaker\\quicksave\\"
+    private var quickScreenshotName = "quicksave"
+    private var saveLocationConfigFilePath = "\\Documents\\ScreenshotMaker\\config\\"
+    private var saveLocationConfigFileName = "save"
 
     private fun convertToFxImage(image: BufferedImage?): Image? {
         var wr: WritableImage? = null
@@ -77,6 +91,20 @@ class ScreenshotMakerController {
         return ImageView(wr).image
     }
 
+    private fun convertToBufferedImage(image: Image?): BufferedImage? {
+        var wr: BufferedImage? = null
+        if (image != null) {
+            wr = BufferedImage(image.width.toInt(), image.height.toInt(), TYPE_4BYTE_ABGR)
+            var pw = image.pixelReader
+            for (x in 0 until image.width.toInt()) {
+                for (y in 0 until image.height.toInt()) {
+                    wr.setRGB(x, y, pw.getArgb(x, y))
+                }
+            }
+        }
+        return wr
+    }
+
     private fun getScreenshot(): Image? {
         try {
             var robot = Robot()
@@ -89,7 +117,41 @@ class ScreenshotMakerController {
         }
     }
 
-    private fun changeCanvasImage(stackPane: StackPane, screenshotCanvas: Canvas, drawingCanvas: Canvas, cutCanvas:Canvas, image: Image?) {
+    private fun getPathFromConfig(): String {
+        try {
+            var file = File(System.getenv("USERPROFILE") + saveLocationConfigFilePath + saveLocationConfigFileName + ".txt")
+            if (!file.exists())
+            {
+                file.parentFile.mkdirs()
+                return System.getenv("USERPROFILE") + defaultSaveLocation
+            }
+            BufferedReader(FileReader(System.getenv("USERPROFILE") + saveLocationConfigFilePath + saveLocationConfigFileName + ".txt")).use { reader ->
+                return reader.readLine()
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            var file = File(System.getenv("USERPROFILE") + defaultSaveLocation + "screenshot.png")
+            if (!file.exists())
+                file.parentFile.mkdirs()
+            return System.getenv("USERPROFILE") + defaultSaveLocation
+        }
+    }
+
+    private fun rememberLastSavePath(path: String) {
+        try {
+            BufferedWriter(PrintWriter(System.getenv("USERPROFILE") + saveLocationConfigFilePath + saveLocationConfigFileName + ".txt")).use { bw ->
+                var file = File(path);
+                if (file.isFile)
+                    bw.write(file.parent)
+                else
+                    bw.write(path)
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun changeCanvasImage(image: Image?) {
         if (image != null) {
             drawingCanvas.graphicsContext2D.clearRect(0.0, 0.0, drawingCanvas.width, drawingCanvas.height)
             screenshotCanvas.height = image.height
@@ -103,13 +165,14 @@ class ScreenshotMakerController {
             var scale = Scale(scaleMult, scaleMult)
             scale.pivotX = 0.0
             scale.pivotY = 0.0
-            stackPane.transforms.setAll(scale)
+            canvasPane.transforms.setAll(scale)
             screenshotCanvas.graphicsContext2D.drawImage(image, 0.0, 0.0)
 
-            stackPane.scene.window.width = image.width * scaleMult + 15
-            stackPane.scene.window.height = image.height * scaleMult + defaultToolPanel.height + 70
+            canvasPane.scene.window.width = image.width * scaleMult + 15
+            canvasPane.scene.window.height = image.height * scaleMult + defaultToolPanel.height + 70
         }
     }
+
 
     @FXML
     private fun onTakeScreenshotButtonClick(event: ActionEvent) {
@@ -125,9 +188,11 @@ class ScreenshotMakerController {
         Thread.sleep((timer * 1000).toLong())
         var image = getScreenshot()
         scene.window.opacity = defaultOpacity
-        changeCanvasImage(canvasPane, screenshotCanvas, drawingCanvas, cutCanvas, image)
+        changeCanvasImage(image)
         hasImage = true
         cutButton.isVisible = true
+        saveMenuItem.isDisable = false
+        saveAsMenuItem.isDisable = false
     }
 
     @FXML
@@ -224,7 +289,7 @@ class ScreenshotMakerController {
             var screenshotImage = WritableImage(screenshotSnapshot.pixelReader, x, y, width, height)
             var drawingImage = WritableImage(drawingSnapshot.pixelReader, x, y, width, height)
 
-            changeCanvasImage(canvasPane, screenshotCanvas, drawingCanvas, cutCanvas, screenshotImage)
+            changeCanvasImage(screenshotImage)
             drawingCanvasCtx.drawImage(drawingImage, 0.0, 0.0)
         }
         else if (appMode == AppMode.DRAWING)
@@ -240,17 +305,58 @@ class ScreenshotMakerController {
 
     @FXML
     private fun onOpenMenuClicked() {
-
+        var fileChooser = FileChooser()
+        var imageFilter = FileChooser.ExtensionFilter("Image Files", "*.jpg", "*.png")
+        fileChooser.extensionFilters.add(imageFilter)
+        fileChooser.initialDirectory = File(getPathFromConfig())
+        var file = fileChooser.showOpenDialog(canvasPane.scene.window)
+        rememberLastSavePath(file.parent)
+        var image = Image(file.toURI().toString());
+        changeCanvasImage(image)
     }
 
     @FXML
     private fun onSaveMenuClicked() {
+        var file: File
+        file = File(System.getenv("USERPROFILE") + quickSaveLocation + quickScreenshotName + ".png")
 
+        var params = SnapshotParameters()
+        params.fill = Color.TRANSPARENT
+        var screenshotImage = screenshotCanvas.snapshot(params, null)
+        var drawingImage = drawingCanvas.snapshot(params, null)
+        cutCanvas.graphicsContext2D.drawImage(screenshotImage, 0.0, 0.0)
+        cutCanvas.graphicsContext2D.drawImage(drawingImage, 0.0, 0.0)
+        var resultImage = cutCanvas.snapshot(params, null)
+        cutCanvas.graphicsContext2D.clearRect(0.0, 0.0, resultImage.width, resultImage.height)
+        if (!file.exists())
+            file.parentFile.mkdirs()
+        ImageIO.write(convertToBufferedImage(resultImage), "png", file)
     }
 
     @FXML
     private fun onSaveAsMenuClicked() {
+        var file: File
+        var fileChooser = FileChooser()
+        var imageFilter = FileChooser.ExtensionFilter("Image Files", "*.png")
+        fileChooser.extensionFilters.add(imageFilter)
+        val path = getPathFromConfig()
+        fileChooser.initialDirectory = File(path)
 
+        try {
+            file = fileChooser.showSaveDialog(canvasPane.scene.window)
+            rememberLastSavePath(file.parent)
+
+            var params = SnapshotParameters()
+            params.fill = Color.TRANSPARENT
+            var screenshotImage = screenshotCanvas.snapshot(params, null)
+            var drawingImage = drawingCanvas.snapshot(params, null)
+            cutCanvas.graphicsContext2D.drawImage(screenshotImage, 0.0, 0.0)
+            cutCanvas.graphicsContext2D.drawImage(drawingImage, 0.0, 0.0)
+            var resultImage = cutCanvas.snapshot(params, null)
+            cutCanvas.graphicsContext2D.clearRect(0.0, 0.0, resultImage.width, resultImage.height)
+            ImageIO.write(convertToBufferedImage(resultImage), "png", file)
+        } catch (ex: NullPointerException) {
+        }
     }
 
     @FXML
