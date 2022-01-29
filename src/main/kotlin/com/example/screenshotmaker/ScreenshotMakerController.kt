@@ -313,6 +313,10 @@ class ScreenshotMakerController {
         rememberLastSavePath(file.parent)
         var image = Image(file.toURI().toString());
         changeCanvasImage(image)
+        saveMenuItem.isDisable = false
+        saveAsMenuItem.isDisable = false
+        hasImage = true
+        cutButton.isVisible = true
     }
 
     @FXML
