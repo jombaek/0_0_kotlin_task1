@@ -121,6 +121,9 @@ class ScreenshotMakerController {
             if (!file.exists())
             {
                 file.parentFile.mkdirs()
+                var file = File(System.getenv("USERPROFILE") + defaultSaveLocation + "test.txt")
+                if (!file.exists())
+                    file.parentFile.mkdirs()
                 return System.getenv("USERPROFILE") + defaultSaveLocation
             }
             BufferedReader(FileReader(System.getenv("USERPROFILE") + saveLocationConfigFilePath + saveLocationConfigFileName + ".txt")).use { reader ->
