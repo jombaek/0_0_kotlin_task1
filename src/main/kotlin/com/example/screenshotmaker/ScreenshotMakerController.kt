@@ -70,9 +70,8 @@ class ScreenshotMakerController {
     private var x_start = -1.0
     private var y_start = -1.0
     private var defaultSaveLocation = "\\Documents\\ScreenshotMaker\\screenshots\\"
-    private var quickSaveLocation = "\\Documents\\ScreenshotMaker\\quicksave\\"
-    private var quickScreenshotName = "quicksave"
     private var saveLocationConfigFilePath = "\\Documents\\ScreenshotMaker\\config\\"
+    private var quickScreenshotName = "quicksave"
     private var saveLocationConfigFileName = "save"
 
     private fun convertToFxImage(image: BufferedImage?): Image? {
@@ -116,25 +115,11 @@ class ScreenshotMakerController {
     }
 
     private fun getPathFromConfig(): String {
-        try {
-            var file = File(System.getenv("USERPROFILE") + saveLocationConfigFilePath + saveLocationConfigFileName + ".txt")
-            if (!file.exists())
-            {
-                file.parentFile.mkdirs()
-                var file = File(System.getenv("USERPROFILE") + defaultSaveLocation + "test.txt")
-                if (!file.exists())
-                    file.parentFile.mkdirs()
-                return System.getenv("USERPROFILE") + defaultSaveLocation
-            }
-            BufferedReader(FileReader(System.getenv("USERPROFILE") + saveLocationConfigFilePath + saveLocationConfigFileName + ".txt")).use { reader ->
-                return reader.readLine()
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-            var file = File(System.getenv("USERPROFILE") + defaultSaveLocation + "screenshot.png")
-            if (!file.exists())
-                file.parentFile.mkdirs()
+        var file = File(System.getenv("USERPROFILE") + saveLocationConfigFilePath + saveLocationConfigFileName + ".txt")
+        if (!file.exists())
             return System.getenv("USERPROFILE") + defaultSaveLocation
+        BufferedReader(FileReader(System.getenv("USERPROFILE") + saveLocationConfigFilePath + saveLocationConfigFileName + ".txt")).use { reader ->
+            return reader.readLine()
         }
     }
 
@@ -342,11 +327,9 @@ class ScreenshotMakerController {
     @FXML
     private fun onSaveMenuClicked() {
         var file: File
-        file = File(System.getenv("USERPROFILE") + quickSaveLocation + quickScreenshotName + ".png")
+        file = File(System.getenv("USERPROFILE") + defaultSaveLocation + quickScreenshotName + ".png")
 
         var resultImage = getImageFromCanvases()
-        if (!file.exists())
-            file.parentFile.mkdirs()
         ImageIO.write(convertToBufferedImage(resultImage), "png", file)
     }
 
